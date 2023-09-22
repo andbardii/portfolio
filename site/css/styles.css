@@ -8180,6 +8180,9 @@ textarea.form-control-lg {
 }
 
 /* rtl:end:remove */
+.bg-red{
+  color:#A2090A !important  ;
+}
 .text-red{
   color:#A2090A;
 }
