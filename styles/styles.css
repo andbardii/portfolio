@@ -749,7 +749,20 @@ section {
 .padd{
   margin-left: 5px;
 }
+@media screen and (max-width: 440px) {
+  div.modal-content > iframe{
+    width: 290px !important ;
+  }
+}
+@media screen and (max-width: 320px) {
+  div.modal-content > iframe{
+    width: 240px !important ;
+  }
+}
 @media screen and (max-width: 600px) {
+  div.modal-content > iframe{
+    width: 400px;
+  }
   header {
     padding: 0 !important;
   }
@@ -974,9 +987,5 @@ section {
   }
   .main-title h2 .bg-text {
     font-size: 4rem;
-  }
-  
-  .modal-content{
-    width: 90%;  
   }
 }/*# sourceMappingURL=styles.css.map */
