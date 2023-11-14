@@ -132,12 +132,30 @@
                 <h2>My <span>Portfolio</span><span class="bg-text">My Work</span></h2>
             </div>
             <p class="port-text">
-                Here is some projects that I've done in various programming languages.
+                Here is some projects that I've done in various programming languages.<br><br>Filter by:
+                <div class="row">
+                    <div class="card" id="filter-all">
+                        All
+                    </div>
+                    <div class="card" id="filter-video">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" fill="currentColor" class="bi bi-play" viewBox="0 0 16 16">
+                            <path d="M10.804 8 5 4.633v6.734L10.804 8zm.792-.696a.802.802 0 0 1 0 1.392l-6.363 3.692C4.713 12.69 4 12.345 4 11.692V4.308c0-.653.713-.998 1.233-.696l6.363 3.692z"/>
+                        </svg> <span class="padd">Video</span>
+                    </div>
+                    <div class="card">
+                        <i class="fab fa-github"></i> <span class="padd">Code</span>
+                    </div>
+                    <div class="card">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-browser-chrome" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M16 8a8.001 8.001 0 0 1-7.022 7.94l1.902-7.098a2.995 2.995 0 0 0 .05-1.492A2.977 2.977 0 0 0 10.237 6h5.511A8 8 0 0 1 16 8ZM0 8a8 8 0 0 0 7.927 8l1.426-5.321a2.978 2.978 0 0 1-.723.255 2.979 2.979 0 0 1-1.743-.147 2.986 2.986 0 0 1-1.043-.7L.633 4.876A7.975 7.975 0 0 0 0 8Zm5.004-.167L1.108 3.936A8.003 8.003 0 0 1 15.418 5H8.066a2.979 2.979 0 0 0-1.252.243 2.987 2.987 0 0 0-1.81 2.59ZM8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
+                        </svg> <span class="padd">Website</span>
+                    </div>
+                </div>
             </p>
             <div class="portfolios">
-                <div class="portfolio-item">
+                <div class="portfolio-item video code">
                     <div class="image">
-                        <img src="img/hodle.png" alt="">
+                        <img src="img/hodle.png" alt="HODLE App">
                     </div>
                     <div class="hover-items">
                         <h3>HODLE App</h3>
@@ -145,12 +163,32 @@
                             <a href="https://github.com/andbardii/capstone-hodle" target="_blank" class="icon">
                                 <i class="fab fa-github"></i>
                             </a>
+                            <a class="openBtn icon" data-src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7118868333889732608" target="_blank">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-play" viewBox="0 0 16 16">
+                                    <path d="M10.804 8 5 4.633v6.734L10.804 8zm.792-.696a.802.802 0 0 1 0 1.392l-6.363 3.692C4.713 12.69 4 12.345 4 11.692V4.308c0-.653.713-.998 1.233-.696l6.363 3.692z"/>
+                                </svg>
+                            </a>
                         </div>
                     </div>
                 </div>
-                <div class="portfolio-item">
+                <div class="portfolio-item website">
                     <div class="image">
-                        <img src="img/translate.png" alt="">
+                        <img src="img/adriano.png" alt="Adriano Group Website">
+                    </div>
+                    <div class="hover-items">
+                        <h3>Adriano Group Website</h3>
+                        <div class="icons">
+                            <a href="https://adrianogroup.it" target="_blank" class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-browser-chrome" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M16 8a8.001 8.001 0 0 1-7.022 7.94l1.902-7.098a2.995 2.995 0 0 0 .05-1.492A2.977 2.977 0 0 0 10.237 6h5.511A8 8 0 0 1 16 8ZM0 8a8 8 0 0 0 7.927 8l1.426-5.321a2.978 2.978 0 0 1-.723.255 2.979 2.979 0 0 1-1.743-.147 2.986 2.986 0 0 1-1.043-.7L.633 4.876A7.975 7.975 0 0 0 0 8Zm5.004-.167L1.108 3.936A8.003 8.003 0 0 1 15.418 5H8.066a2.979 2.979 0 0 0-1.252.243 2.987 2.987 0 0 0-1.81 2.59ZM8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="portfolio-item video code">
+                    <div class="image">
+                        <img src="img/translate.png" alt="Google Translate Clone">
                     </div>
                     <div class="hover-items">
                         <h3>Google Translate Clone</h3>
@@ -158,12 +196,17 @@
                             <a href="https://github.com/andbardii/translate-angular-app/tree/main" target="_blank" class="icon">
                                 <i class="fab fa-github"></i>
                             </a>
+                            <a class="openBtn icon" data-src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7115684899088396289" target="_blank">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-play" viewBox="0 0 16 16">
+                                    <path d="M10.804 8 5 4.633v6.734L10.804 8zm.792-.696a.802.802 0 0 1 0 1.392l-6.363 3.692C4.713 12.69 4 12.345 4 11.692V4.308c0-.653.713-.998 1.233-.696l6.363 3.692z"/>
+                                </svg>
+                            </a>
                         </div>
                     </div>
                 </div>
-                <div class="portfolio-item">
+                <div class="portfolio-item code">
                     <div class="image">
-                        <img src="img/spotify.png" alt="">
+                        <img src="img/spotify.png" alt="Spotify Clone">
                     </div>
                     <div class="hover-items">
                         <h3>Spotify Clone</h3>
@@ -174,9 +217,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="portfolio-item">
+                <div class="portfolio-item video code">
                     <div class="image">
-                        <img src="img/todo.png" alt="">
+                        <img src="img/todo.png" alt="Todo Angular App">
                     </div>
                     <div class="hover-items">
                         <h3>Todo Angular App</h3>
@@ -184,17 +227,17 @@
                             <a href="https://github.com/andbardii/fs0223-Andrea-Bardi/tree/master/m3/s2/project" target="_blank"  class="icon">
                                 <i class="fab fa-github"></i>
                             </a>
-                            <a href="https://www.linkedin.com/posts/andbardii_angular-typescript-scss-activity-7090210825826635776-CXls?utm_source=share&utm_medium=member_desktop" target="_blank" class="icon">
+                            <a class="openBtn icon" data-src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7090210794524598272" target="_blank">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-play" viewBox="0 0 16 16">
                                     <path d="M10.804 8 5 4.633v6.734L10.804 8zm.792-.696a.802.802 0 0 1 0 1.392l-6.363 3.692C4.713 12.69 4 12.345 4 11.692V4.308c0-.653.713-.998 1.233-.696l6.363 3.692z"/>
-                                  </svg>
+                                </svg>
                             </a>
                         </div>
                     </div>
                 </div>
-                <div class="portfolio-item">
+                <div class="portfolio-item video code">
                     <div class="image">
-                        <img src="img/meteo.png" alt="">
+                        <img src="img/meteo.png" alt="Weather Angular App">
                     </div>
                     <div class="hover-items">
                         <h3>Weather Angular App</h3>
@@ -202,17 +245,17 @@
                             <a href="https://github.com/andbardii/weather-angular-app" target="_blank" class="icon">
                                 <i class="fab fa-github"></i>
                             </a>
-                            <a href="https://www.linkedin.com/posts/andbardii_angular-api-activity-7088814320368660480-2iRO?utm_source=share&utm_medium=member_desktop" target="_blank" class="icon">
+                            <a class="openBtn icon" data-src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7088814310365216768" target="_blank">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-play" viewBox="0 0 16 16">
                                     <path d="M10.804 8 5 4.633v6.734L10.804 8zm.792-.696a.802.802 0 0 1 0 1.392l-6.363 3.692C4.713 12.69 4 12.345 4 11.692V4.308c0-.653.713-.998 1.233-.696l6.363 3.692z"/>
-                                  </svg>
+                                </svg>
                             </a>
                         </div>
                     </div>
                 </div>
-                <div class="portfolio-item">
+                <div class="portfolio-item code">
                     <div class="image">
-                        <img src="img/epibook.png" alt="">
+                        <img src="img/epibook.png" alt="Epibook Social">
                     </div>
                     <div class="hover-items">
                         <h3>Epibook Social</h3>
@@ -223,9 +266,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="portfolio-item">
+                <div class="portfolio-item video code">
                     <div class="image">
-                        <img src="img/phone.png" alt="">
+                        <img src="img/phone.png" alt="Fake Phone">
                     </div>
                     <div class="hover-items">
                         <h3>Fake Phone</h3>
@@ -233,17 +276,17 @@
                             <a href="https://github.com/andbardii/fs0223-Andrea-Bardi/tree/master/m3/s1/g5" target="_blank" class="icon">
                                 <i class="fab fa-github"></i>
                             </a>
-                            <a href="https://www.linkedin.com/posts/andbardii_typescript-bootstrap-activity-7089266851947401216-HEp1?utm_source=share&utm_medium=member_desktop" target="_blank" class="icon">
+                            <a class="openBtn icon" data-src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7089266841327411200" target="_blank">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-play" viewBox="0 0 16 16">
                                     <path d="M10.804 8 5 4.633v6.734L10.804 8zm.792-.696a.802.802 0 0 1 0 1.392l-6.363 3.692C4.713 12.69 4 12.345 4 11.692V4.308c0-.653.713-.998 1.233-.696l6.363 3.692z"/>
-                                  </svg>
+                                </svg>
                             </a>
                         </div>
                     </div>
                 </div>
-                <div class="portfolio-item">
+                <div class="portfolio-item code">
                     <div class="image">
-                        <img src="img/quiz.png" alt="">
+                        <img src="img/quiz.png" alt="Quiz App Clone">
                     </div>
                     <div class="hover-items">
                         <h3>Quiz App Clone</h3>
@@ -380,6 +423,15 @@
     <div class="theme-btn">
         <i class="fas fa-adjust"></i>
     </div>
+    <div id="myModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7118868333889732608" height="600" width="450" frameborder="0" allowfullscreen="true" title="Post incorporato"></iframe>
+        </div>
+        </div>
     <script src="app.js"></script>
 </body>
 </html>
+<!-- The Modal -->
