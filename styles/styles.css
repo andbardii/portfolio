@@ -613,21 +613,21 @@ button {
 
 .scroll-indicator {
   position: absolute;
-  bottom: var(--space-xl);
+  bottom: var(--space-md);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
 }
 .scroll-indicator .scroll-line {
   width: 1px;
-  height: 60px;
+  height: 40px;
   background: linear-gradient(to bottom, var(--color-accent), transparent);
   animation: scrollLine 2s ease-in-out infinite;
 }
@@ -943,22 +943,19 @@ section {
 @media (max-width: 709px) {
   .portfolio-swiper {
     display: block !important;
-    overflow: visible !important;
-    clip-path: none !important;
+    overflow: hidden;
+    padding: 25px 0;
   }
 }
 .portfolio-swiper .swiper-wrapper {
-  overflow: visible !important;
-  padding-top: 25px;
-  padding-bottom: 25px;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 .portfolio-swiper .swiper-slide {
   height: auto;
   padding: 0 var(--space-lg);
-  overflow: visible !important;
 }
 .portfolio-swiper .portfolio-item {
-  overflow: visible !important;
   margin-top: 15px;
 }
 .portfolio-swiper .swiper-pagination {
