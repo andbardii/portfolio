@@ -1,0 +1,54 @@
+# Andrea Bardi
+
+> Full Stack Developer & Graphic Designer based in Bologna, Italy. Co-founder of FAM Vision web agency. Specializes in creating digital experiences that blend elegant code with stunning visuals.
+
+Andrea Bardi is a 23-year-old creative developer with a unique blend of graphic design expertise and full-stack development skills. After graduating in Graphics and Communication, he pursued his passion for technology by completing an intensive Full Stack Developer course at EPICODE. This dual background allows him to create solutions that are both technically robust and visually compelling.
+
+## Contact
+
+- [Email](mailto:andbardii@icloud.com): andbardii@icloud.com
+- [GitHub](https://github.com/andbardii): @andbardii
+- [LinkedIn](https://www.linkedin.com/in/andbardii): @andbardii
+- [FAM Vision](https://famvision.it): Web agency co-founded by Andrea
+
+## Skills
+
+**Languages:** JavaScript, TypeScript, Java, Python, C#, SQL
+
+**Frontend:** Angular, HTML5, CSS3, SASS, Bootstrap
+
+**Backend:** Spring, Node.js, Hibernate, Flask, REST APIs
+
+**Database:** PostgreSQL, MS SQL Server, MySQL
+
+**DevOps & Cloud:** Git, Docker, AWS, Azure
+
+**Tools:** Agile, n8n, Figma, VS Code
+
+## Experience
+
+- **Co-Founder & Lead Developer at FAM Vision** (Oct 2023 - Present): Web development, custom web apps, social media management, branding, SEO optimization
+- **Junior Developer at CADENAS Italiana S.r.l.** (Dec 2023 - Mar 2024): Functional scripting, pipeline management, ERP development
+- **Graphic Designer at Comet Spa** (Nov 2021 - Dec 2021): Magazine design, advertising, commercial photography
+- **Graphic Designer at Grafiche e Liquori Snc** (Nov 2020 - Dec 2020): Packaging design, periodical magazines
+
+## Education
+
+- **Bachelor's Degree in Computer Engineering & AI** - EPICODE Institute of Technology (2024 - Present)
+- **Full Stack Development Course** - EPICODE Institute of Technology (2023)
+- **High School Diploma in Graphic Design Communication** - Istituto Aldini Valeriani (2019 - 2022)
+
+## Featured Projects
+
+- [FAM Vision](https://famvision.it): Web agency website - Corporate, Web App
+- [Football Match Analytics](https://fma.famvision.it): SaaS platform for football analytics
+- [ScienSearch](https://sciensearch.famvision.it): Bioinformatics search platform
+- [SCFinance](https://scfinance.famvision.it): Lead generation landing page
+- [CERNET ESCO](https://cernetesco.it): Corporate website for energy services company
+- [Semplicemente Comunita](https://semplicementecomunita.it): Community web application and corporate website
+- [Adriano Group](https://adrianogroup.it): Marketing website
+
+## Optional
+
+- [CV Download](https://andbardii.github.io/portfolio/img/cv.pdf): Andrea's curriculum vitae
+- [GitHub Repositories](https://github.com/andbardii?tab=repositories): More projects and code samples
