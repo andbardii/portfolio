@@ -456,22 +456,13 @@
     let portfolioSwiper = null;
     let swiperScrollLocked = false;
     let isNavigatingProgrammatically = false;
-    let wheelAccumulator = 0;
     let isSlideTransitioning = false;
-    const WHEEL_THRESHOLD = 70;
-    const SLIDE_COOLDOWN = 300;
+    const SLIDE_COOLDOWN = 400;
 
     // Check if project modal is open
     function isProjectModalOpen() {
         const modal = document.getElementById('projectModal');
         return modal && modal.classList.contains('active');
-    }
-
-    // Check if user is interacting with portfolio filter
-    function isInteractingWithFilter(e) {
-        const filterContainer = document.querySelector('.portfolio-filter');
-        if (!filterContainer) return false;
-        return filterContainer.contains(e.target);
     }
 
     if (typeof Swiper !== 'undefined') {
@@ -480,8 +471,8 @@
             spaceBetween: 16,
             loop: false,
             grabCursor: true,
-            speed: 250,
-            touchRatio: 1.5,
+            speed: 300,
+            touchRatio: 0, // Disable swiper's own touch handling - we manage it
             pagination: {
                 el: '.swiper-pagination',
                 clickable: true,
@@ -497,15 +488,34 @@
                 return window.getComputedStyle(swiperContainer).display !== 'none';
             }
 
-            // Check if swiper is centered in viewport
-            function isSwiperCentered() {
+            // Check if swiper is in the "lock zone" - center of viewport with tolerance
+            function isSwiperInLockZone() {
                 const rect = swiperContainer.getBoundingClientRect();
                 const viewportHeight = window.innerHeight;
                 const swiperCenter = rect.top + rect.height / 2;
                 const viewportCenter = viewportHeight / 2;
-                // Tolleranza stretta: 10% del viewport (era 30%)
-                const tolerance = viewportHeight * 0.1;
+                // 25% tolerance - more forgiving
+                const tolerance = viewportHeight * 0.25;
                 return Math.abs(swiperCenter - viewportCenter) < tolerance;
+            }
+
+            // Check if we should hijack scroll based on current state
+            function shouldHijackScroll(scrollingDown) {
+                if (!isSwiperVisible() || isProjectModalOpen() || isNavigatingProgrammatically) {
+                    return false;
+                }
+                if (!isSwiperInLockZone()) {
+                    return false;
+                }
+                // At first slide scrolling up - don't hijack
+                if (portfolioSwiper.isBeginning && !scrollingDown) {
+                    return false;
+                }
+                // At last slide scrolling down - don't hijack
+                if (portfolioSwiper.isEnd && scrollingDown) {
+                    return false;
+                }
+                return true;
             }
 
             // Lock page scroll
@@ -514,6 +524,7 @@
                     swiperScrollLocked = true;
                     document.body.style.overflow = 'hidden';
                     document.body.style.touchAction = 'none';
+                    document.documentElement.style.overflow = 'hidden';
                 }
             }
 
@@ -523,134 +534,111 @@
                     swiperScrollLocked = false;
                     document.body.style.overflow = '';
                     document.body.style.touchAction = '';
-                    wheelAccumulator = 0;
+                    document.documentElement.style.overflow = '';
                 }
             }
 
-            // Handle wheel events for scroll hijacking
-            function handleWheel(e) {
-                // Skip if modal is open, swiper not visible, or interacting with filter
-                if (isProjectModalOpen() || !isSwiperVisible() || isNavigatingProgrammatically || isInteractingWithFilter(e)) {
-                    return;
+            // Navigate to next/prev slide with cooldown
+            function navigateSlide(direction) {
+                if (isSlideTransitioning) return false;
+
+                isSlideTransitioning = true;
+                if (direction === 'next' && !portfolioSwiper.isEnd) {
+                    portfolioSwiper.slideNext();
+                } else if (direction === 'prev' && !portfolioSwiper.isBeginning) {
+                    portfolioSwiper.slidePrev();
                 }
+                setTimeout(() => { isSlideTransitioning = false; }, SLIDE_COOLDOWN);
+                return true;
+            }
 
-                const isAtBeginning = portfolioSwiper.isBeginning;
-                const isAtEnd = portfolioSwiper.isEnd;
-                const deltaY = e.deltaY;
-                const scrollingDown = deltaY > 0;
-                const scrollingUp = deltaY < 0;
+            // ---- WHEEL EVENTS (Desktop/Trackpad) ----
+            let wheelAccumulator = 0;
+            const WHEEL_THRESHOLD = 80;
 
-                // Check if swiper is in viewport center
-                if (isSwiperCentered()) {
-                    // At first slide and scrolling up - allow normal scroll
-                    if (isAtBeginning && scrollingUp) {
-                        unlockScroll();
-                        return;
-                    }
+            function handleWheel(e) {
+                const scrollingDown = e.deltaY > 0;
 
-                    // At last slide and scrolling down - allow normal scroll
-                    if (isAtEnd && scrollingDown) {
-                        unlockScroll();
-                        return;
-                    }
-
-                    // Otherwise hijack scroll
+                if (shouldHijackScroll(scrollingDown)) {
                     e.preventDefault();
                     lockScroll();
 
-                    // Skip if slide is transitioning (cooldown)
                     if (isSlideTransitioning) return;
 
-                    // Accumulate wheel delta for smoother control
-                    wheelAccumulator += deltaY;
+                    wheelAccumulator += e.deltaY;
 
                     if (Math.abs(wheelAccumulator) >= WHEEL_THRESHOLD) {
-                        if (wheelAccumulator > 0 && !isAtEnd) {
-                            isSlideTransitioning = true;
-                            portfolioSwiper.slideNext();
-                            setTimeout(() => { isSlideTransitioning = false; }, SLIDE_COOLDOWN);
-                        } else if (wheelAccumulator < 0 && !isAtBeginning) {
-                            isSlideTransitioning = true;
-                            portfolioSwiper.slidePrev();
-                            setTimeout(() => { isSlideTransitioning = false; }, SLIDE_COOLDOWN);
-                        }
+                        navigateSlide(wheelAccumulator > 0 ? 'next' : 'prev');
                         wheelAccumulator = 0;
                     }
                 } else {
                     unlockScroll();
+                    wheelAccumulator = 0;
                 }
             }
 
-            // Add wheel listener with passive: false to allow preventDefault
             window.addEventListener('wheel', handleWheel, { passive: false });
 
-            // Handle touch events for mobile scroll hijacking
+            // ---- TOUCH EVENTS (Mobile) ----
             let touchStartY = 0;
-            let touchMoveAccumulator = 0;
-            const TOUCH_THRESHOLD = 40;
+            let touchStartTime = 0;
+            let isTouchActive = false;
+            let touchDelta = 0;
+            const TOUCH_THRESHOLD = 50;
 
             function handleTouchStart(e) {
-                // Skip if modal is open or swiper not visible
-                if (isProjectModalOpen() || !isSwiperVisible()) return;
+                if (!isSwiperVisible() || isProjectModalOpen()) return;
+
                 touchStartY = e.touches[0].clientY;
-                touchMoveAccumulator = 0;
+                touchStartTime = Date.now();
+                touchDelta = 0;
+                isTouchActive = true;
             }
 
             function handleTouchMove(e) {
-                // Skip if modal is open or swiper not visible
-                if (isProjectModalOpen() || !isSwiperVisible() || isNavigatingProgrammatically) return;
+                if (!isTouchActive || isNavigatingProgrammatically) return;
 
                 const touchY = e.touches[0].clientY;
-                const deltaY = touchStartY - touchY;
-                const isAtBeginning = portfolioSwiper.isBeginning;
-                const isAtEnd = portfolioSwiper.isEnd;
+                const deltaY = touchStartY - touchY; // positive = scrolling down
                 const scrollingDown = deltaY > 0;
-                const scrollingUp = deltaY < 0;
 
-                if (isSwiperCentered()) {
-                    if (isAtBeginning && scrollingUp) {
-                        unlockScroll();
-                        return;
-                    }
-
-                    if (isAtEnd && scrollingDown) {
-                        unlockScroll();
-                        return;
-                    }
-
+                if (shouldHijackScroll(scrollingDown)) {
                     e.preventDefault();
                     lockScroll();
 
-                    // Skip if slide is transitioning (cooldown)
-                    if (isSlideTransitioning) {
-                        touchStartY = touchY;
-                        return;
-                    }
+                    if (isSlideTransitioning) return;
 
-                    touchMoveAccumulator += deltaY;
-                    touchStartY = touchY;
-
-                    if (Math.abs(touchMoveAccumulator) >= TOUCH_THRESHOLD) {
-                        if (touchMoveAccumulator > 0 && !isAtEnd) {
-                            isSlideTransitioning = true;
-                            portfolioSwiper.slideNext();
-                            setTimeout(() => { isSlideTransitioning = false; }, SLIDE_COOLDOWN);
-                        } else if (touchMoveAccumulator < 0 && !isAtBeginning) {
-                            isSlideTransitioning = true;
-                            portfolioSwiper.slidePrev();
-                            setTimeout(() => { isSlideTransitioning = false; }, SLIDE_COOLDOWN);
-                        }
-                        touchMoveAccumulator = 0;
-                    }
+                    touchDelta = deltaY;
                 } else {
                     unlockScroll();
                 }
             }
 
-            swiperContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-            swiperContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+            function handleTouchEnd(e) {
+                if (!isTouchActive) return;
+                isTouchActive = false;
 
-            // Reset swiper position when navigating via nav links
+                const touchDuration = Date.now() - touchStartTime;
+                const velocity = Math.abs(touchDelta) / touchDuration;
+
+                // Check if it was a valid swipe
+                if (Math.abs(touchDelta) >= TOUCH_THRESHOLD || velocity > 0.3) {
+                    const scrollingDown = touchDelta > 0;
+
+                    if (shouldHijackScroll(scrollingDown)) {
+                        navigateSlide(scrollingDown ? 'next' : 'prev');
+                    }
+                }
+
+                touchDelta = 0;
+            }
+
+            // Global touch listeners for consistent behavior
+            document.addEventListener('touchstart', handleTouchStart, { passive: true });
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+            // ---- NAVIGATION LINK HANDLING ----
             function resetSwiperForNavigation(targetSectionId) {
                 if (!portfolioSwiper || !isSwiperVisible()) return;
 
@@ -663,24 +651,20 @@
                 if (targetSection) {
                     const targetOffset = targetSection.offsetTop;
 
-                    // If navigating to section above portfolio, reset to first slide
                     if (targetOffset < portfolioOffset) {
                         portfolioSwiper.slideTo(0, 0);
-                    }
-                    // If navigating to section below portfolio, go to last slide
-                    else if (targetOffset > portfolioOffset) {
+                    } else if (targetOffset > portfolioOffset) {
                         portfolioSwiper.slideTo(portfolioSwiper.slides.length - 1, 0);
                     }
                 }
 
-                // Re-enable scroll hijacking after navigation completes
                 setTimeout(() => {
                     isNavigatingProgrammatically = false;
                 }, 800);
             }
 
-            // Override nav link clicks to reset swiper
-            document.querySelectorAll('.nav-link, .fixed-sidebar a[href^="#"]').forEach(link => {
+            // Handle all navigation clicks
+            document.querySelectorAll('a[href^="#"]').forEach(link => {
                 link.addEventListener('click', function() {
                     const targetId = this.getAttribute('href');
                     if (targetId && targetId.startsWith('#')) {
@@ -692,20 +676,8 @@
                 });
             });
 
-            // Handle scroll indicator and other anchor links
-            document.querySelectorAll('a[href^="#"]:not(.nav-link)').forEach(link => {
-                link.addEventListener('click', function() {
-                    const targetId = this.getAttribute('href');
-                    if (targetId && targetId.startsWith('#')) {
-                        const sectionId = targetId.substring(1);
-                        if (sectionId !== 'portfolio') {
-                            resetSwiperForNavigation(sectionId);
-                        }
-                    }
-                });
-            });
-
-            // Ensure scroll is unlocked when swiper is not in view
+            // ---- INTERSECTION OBSERVER ----
+            // Unlock scroll when swiper leaves viewport
             const swiperObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (!entry.isIntersecting) {
@@ -717,6 +689,13 @@
             });
 
             swiperObserver.observe(swiperContainer);
+
+            // Safety: unlock on resize if swiper becomes hidden
+            window.addEventListener('resize', () => {
+                if (!isSwiperVisible()) {
+                    unlockScroll();
+                }
+            });
         }
     }
 
