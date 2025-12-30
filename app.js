@@ -3,6 +3,51 @@
 // Modern Interactive JavaScript
 // ============================================
 
+// Console Signature
+console.log(`
+%c █████╗ ██████╗
+%c██╔══██╗██╔══██╗
+%c███████║██████╔╝
+%c██╔══██║██╔══██╗
+%c██║  ██║██████╔╝
+%c╚═╝  ╚═╝╚═════╝  %c●
+`,
+'color: #ffffff',
+'color: #e0e0e0',
+'color: #c0c0c0',
+'color: #a0a0a0',
+'color: #808080',
+'color: #606060',
+'color: #A00A0B; font-size: 24px'
+);
+
+console.log(
+    '%c👋 Hey there, curious developer!',
+    'font-size: 16px; font-weight: bold; color: #A00A0B;'
+);
+
+console.log(
+    `%c
+I'm Andrea Bardi
+Full Stack Developer & Graphic Designer
+Co-Founder @ FAM Vision
+
+🌐 https://famvision.it
+📧 andbardii@icloud.com
+💼 https://linkedin.com/in/andbardii
+🐙 https://github.com/andbardii
+
+Like what you see?
+Let's build something amazing together! 🚀
+`,
+    'color: #9CA3AF; font-family: monospace; font-size: 12px; line-height: 1.6;'
+);
+
+console.log(
+    '%c💡 Psst... there might be some hidden easter eggs around here...',
+    'color: #6B7280; font-style: italic; font-size: 10px;'
+);
+
 (function() {
     'use strict';
 
@@ -453,249 +498,417 @@
     // ============================================
     // PORTFOLIO SWIPER (Mobile) with Scroll Hijacking
     // ============================================
-    let portfolioSwiper = null;
-    let swiperScrollLocked = false;
-    let isNavigatingProgrammatically = false;
-    let isSlideTransitioning = false;
-    const SLIDE_COOLDOWN = 400;
+    // COMPORTAMENTO:
+    // - Scroll normale finché lo swiper non è vicino al centro
+    // - Quando lo swiper è nella "capture zone", BLOCCA immediatamente
+    // - Swipe VERTICALE = naviga tra slide
+    // - Swipe ORIZZONTALE = funziona normalmente (swiper cards, filtri)
+    // - Click su nav link = bypassa il blocco
+    // ============================================
 
-    // Check if project modal is open
-    function isProjectModalOpen() {
-        const modal = document.getElementById('projectModal');
-        return modal && modal.classList.contains('active');
-    }
+    let portfolioSwiper = null;
 
     if (typeof Swiper !== 'undefined') {
-        portfolioSwiper = new Swiper('.portfolio-swiper', {
-            slidesPerView: 1,
-            spaceBetween: 16,
-            loop: false,
-            grabCursor: true,
-            speed: 300,
-            touchRatio: 0, // Disable swiper's own touch handling - we manage it
-            pagination: {
-                el: '.swiper-pagination',
-                clickable: true,
-            }
-        });
-
         const swiperContainer = document.querySelector('.portfolio-swiper');
         const portfolioSection = document.getElementById('portfolio');
 
-        if (swiperContainer && portfolioSwiper) {
-            // Check if swiper is visible (mobile breakpoint)
-            function isSwiperVisible() {
-                return window.getComputedStyle(swiperContainer).display !== 'none';
-            }
+        if (!swiperContainer || !portfolioSection) {
+            console.warn('Swiper: elementi non trovati');
+        } else {
+            // Swiper con touch orizzontale abilitato
+            portfolioSwiper = new Swiper('.portfolio-swiper', {
+                slidesPerView: 1,
+                spaceBetween: 16,
+                loop: false,
+                grabCursor: true,
+                speed: 300,
+                allowTouchMove: true,
+                touchAngle: 45,
+                threshold: 10,
+                resistanceRatio: 0.85,
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                }
+            });
 
-            // Check if swiper is in the "lock zone" - center of viewport with tolerance
-            function isSwiperInLockZone() {
+            // ============================================
+            // CONFIGURAZIONE
+            // ============================================
+            const CONFIG = {
+                // Zona di cattura: quando lo swiper è entro questa distanza dal centro, blocca
+                CAPTURE_ZONE: Math.min(window.innerHeight * 0.4, 350),
+                // Cooldown tra cambi slide
+                SLIDE_COOLDOWN: 400,
+                // Soglia minima per riconoscere uno swipe verticale
+                VERTICAL_THRESHOLD: 20,
+                // Soglia wheel
+                WHEEL_THRESHOLD: 40,
+                // Tolleranza per considerare "centrato"
+                CENTER_TOLERANCE: 10
+            };
+
+            // ============================================
+            // STATO
+            // ============================================
+            const state = {
+                locked: false,
+                sliding: false,
+                navigating: false,  // true durante click su nav link
+                centered: false,
+                rafId: null
+            };
+
+            // ============================================
+            // UTILITIES
+            // ============================================
+            const isMobile = () => window.getComputedStyle(swiperContainer).display !== 'none';
+
+            const isModalOpen = () => {
+                const modal = document.getElementById('projectModal');
+                return modal?.classList.contains('active');
+            };
+
+            const getMetrics = () => {
                 const rect = swiperContainer.getBoundingClientRect();
-                const viewportHeight = window.innerHeight;
+                const viewportCenter = window.innerHeight / 2;
                 const swiperCenter = rect.top + rect.height / 2;
-                const viewportCenter = viewportHeight / 2;
-                // 25% tolerance - more forgiving
-                const tolerance = viewportHeight * 0.25;
-                return Math.abs(swiperCenter - viewportCenter) < tolerance;
-            }
+                const offset = swiperCenter - viewportCenter;
 
-            // Check if we should hijack scroll based on current state
-            function shouldHijackScroll(scrollingDown) {
-                if (!isSwiperVisible() || isProjectModalOpen() || isNavigatingProgrammatically) {
-                    return false;
-                }
-                if (!isSwiperInLockZone()) {
-                    return false;
-                }
-                // At first slide scrolling up - don't hijack
-                if (portfolioSwiper.isBeginning && !scrollingDown) {
-                    return false;
-                }
-                // At last slide scrolling down - don't hijack
-                if (portfolioSwiper.isEnd && scrollingDown) {
-                    return false;
-                }
-                return true;
-            }
+                return {
+                    offset,                                    // positivo = swiper sotto centro, negativo = sopra
+                    absOffset: Math.abs(offset),
+                    inCaptureZone: Math.abs(offset) <= CONFIG.CAPTURE_ZONE,
+                    isCentered: Math.abs(offset) <= CONFIG.CENTER_TOLERANCE,
+                    scrollTarget: window.scrollY + offset      // scrollY per centrare lo swiper
+                };
+            };
 
-            // Lock page scroll
-            function lockScroll() {
-                if (!swiperScrollLocked) {
-                    swiperScrollLocked = true;
-                    document.body.style.overflow = 'hidden';
-                    document.body.style.touchAction = 'none';
-                    document.documentElement.style.overflow = 'hidden';
+            const canSlide = (dir) => {
+                if (dir === 'next') return !portfolioSwiper.isEnd;
+                if (dir === 'prev') return !portfolioSwiper.isBeginning;
+                return false;
+            };
+
+            // ============================================
+            // SCROLL LOCK/UNLOCK
+            // ============================================
+            const lock = () => {
+                if (state.locked) return;
+                state.locked = true;
+                // pan-x permette scroll orizzontale (filtri, swiper), blocca verticale
+                document.body.style.cssText = 'overflow:hidden;touch-action:pan-x pinch-zoom;';
+                document.documentElement.style.overflow = 'hidden';
+            };
+
+            const unlock = () => {
+                if (!state.locked) return;
+                state.locked = false;
+                state.centered = false;
+                document.body.style.cssText = '';
+                document.documentElement.style.overflow = '';
+            };
+
+            // ============================================
+            // SNAP AL CENTRO (istantaneo, no smooth)
+            // ============================================
+            const snapToCenter = () => {
+                const { scrollTarget, isCentered } = getMetrics();
+
+                if (isCentered) {
+                    state.centered = true;
+                    lock();
+                    return;
                 }
-            }
 
-            // Unlock page scroll
-            function unlockScroll() {
-                if (swiperScrollLocked) {
-                    swiperScrollLocked = false;
-                    document.body.style.overflow = '';
-                    document.body.style.touchAction = '';
-                    document.documentElement.style.overflow = '';
+                // Scroll istantaneo per fermare l'inerzia
+                window.scrollTo({ top: scrollTarget, behavior: 'instant' });
+                state.centered = true;
+                lock();
+            };
+
+            // ============================================
+            // FORZA POSIZIONE (chiamata continuamente durante scroll)
+            // ============================================
+            const forcePosition = () => {
+                if (!state.locked || state.navigating) return;
+
+                const { absOffset, scrollTarget } = getMetrics();
+
+                // Se siamo spostati, riposiziona
+                if (absOffset > CONFIG.CENTER_TOLERANCE) {
+                    window.scrollTo({ top: scrollTarget, behavior: 'instant' });
                 }
-            }
+            };
 
-            // Navigate to next/prev slide with cooldown
-            function navigateSlide(direction) {
-                if (isSlideTransitioning) return false;
+            // ============================================
+            // NAVIGAZIONE SLIDE
+            // ============================================
+            const slide = (direction) => {
+                if (state.sliding || !canSlide(direction)) return false;
 
-                isSlideTransitioning = true;
-                if (direction === 'next' && !portfolioSwiper.isEnd) {
+                state.sliding = true;
+
+                if (direction === 'next') {
                     portfolioSwiper.slideNext();
-                } else if (direction === 'prev' && !portfolioSwiper.isBeginning) {
+                } else {
                     portfolioSwiper.slidePrev();
                 }
-                setTimeout(() => { isSlideTransitioning = false; }, SLIDE_COOLDOWN);
+
+                setTimeout(() => { state.sliding = false; }, CONFIG.SLIDE_COOLDOWN);
                 return true;
-            }
+            };
 
-            // ---- WHEEL EVENTS (Desktop/Trackpad) ----
-            let wheelAccumulator = 0;
-            const WHEEL_THRESHOLD = 80;
+            // ============================================
+            // DETERMINA SE BLOCCARE
+            // ============================================
+            const shouldCapture = (scrollingDown) => {
+                if (!isMobile() || isModalOpen() || state.navigating) return false;
 
-            function handleWheel(e) {
+                const { inCaptureZone } = getMetrics();
+                if (!inCaptureZone) return false;
+
+                // Blocca solo se ci sono slide nella direzione dello scroll
+                if (scrollingDown && !canSlide('next')) return false;
+                if (!scrollingDown && !canSlide('prev')) return false;
+
+                return true;
+            };
+
+            // ============================================
+            // TOUCH HANDLING
+            // ============================================
+            let touch = {
+                active: false,
+                startX: 0,
+                startY: 0,
+                lastY: 0,
+                direction: null,  // 'v' | 'h' | null
+                totalDeltaY: 0
+            };
+
+            const onTouchStart = (e) => {
+                if (!isMobile() || isModalOpen() || state.navigating) return;
+
+                touch.active = true;
+                touch.startX = e.touches[0].clientX;
+                touch.startY = e.touches[0].clientY;
+                touch.lastY = touch.startY;
+                touch.direction = null;
+                touch.totalDeltaY = 0;
+            };
+
+            const onTouchMove = (e) => {
+                if (!touch.active || state.navigating) return;
+
+                const x = e.touches[0].clientX;
+                const y = e.touches[0].clientY;
+                const dx = Math.abs(x - touch.startX);
+                const dy = Math.abs(y - touch.startY);
+
+                // Determina direzione al primo movimento significativo
+                if (!touch.direction && (dx > 5 || dy > 5)) {
+                    // Se dy > dx * 1.2, è verticale (con un po' di margine)
+                    touch.direction = dy > dx * 1.2 ? 'v' : 'h';
+                }
+
+                // Orizzontale: lascia passare (per swiper e filtri)
+                if (touch.direction === 'h') {
+                    return;
+                }
+
+                // Verticale: gestisci scroll hijacking
+                if (touch.direction === 'v') {
+                    const deltaY = touch.lastY - y;  // positivo = scroll down
+                    const scrollingDown = deltaY > 0;
+                    touch.lastY = y;
+                    touch.totalDeltaY += deltaY;
+
+                    // Se siamo già bloccati, previeni SEMPRE lo scroll verticale
+                    if (state.locked) {
+                        e.preventDefault();
+                        forcePosition();
+                        return;
+                    }
+
+                    // Se dovremmo catturare
+                    if (shouldCapture(scrollingDown)) {
+                        e.preventDefault();
+                        snapToCenter();
+                    }
+                }
+            };
+
+            const onTouchEnd = () => {
+                if (!touch.active) return;
+
+                // Se bloccati e swipe verticale significativo, naviga
+                if (state.locked && touch.direction === 'v' && !state.sliding) {
+                    const delta = touch.totalDeltaY;
+
+                    if (Math.abs(delta) >= CONFIG.VERTICAL_THRESHOLD) {
+                        const direction = delta > 0 ? 'next' : 'prev';
+
+                        if (canSlide(direction)) {
+                            slide(direction);
+                        } else {
+                            // Fine slide, sblocca
+                            unlock();
+                        }
+                    }
+                }
+
+                touch.active = false;
+                touch.direction = null;
+                touch.totalDeltaY = 0;
+            };
+
+            // Touch listeners globali
+            document.addEventListener('touchstart', onTouchStart, { passive: true });
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd, { passive: true });
+            document.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+            // ============================================
+            // WHEEL HANDLING (desktop/trackpad)
+            // ============================================
+            let wheelDelta = 0;
+
+            const onWheel = (e) => {
+                if (!isMobile() || isModalOpen() || state.navigating) return;
+
                 const scrollingDown = e.deltaY > 0;
 
-                if (shouldHijackScroll(scrollingDown)) {
+                // Se bloccati
+                if (state.locked) {
                     e.preventDefault();
-                    lockScroll();
+                    forcePosition();
 
-                    if (isSlideTransitioning) return;
+                    if (state.sliding) return;
 
-                    wheelAccumulator += e.deltaY;
+                    wheelDelta += e.deltaY;
 
-                    if (Math.abs(wheelAccumulator) >= WHEEL_THRESHOLD) {
-                        navigateSlide(wheelAccumulator > 0 ? 'next' : 'prev');
-                        wheelAccumulator = 0;
+                    if (Math.abs(wheelDelta) >= CONFIG.WHEEL_THRESHOLD) {
+                        const direction = wheelDelta > 0 ? 'next' : 'prev';
+
+                        if (canSlide(direction)) {
+                            slide(direction);
+                        } else {
+                            unlock();
+                        }
+
+                        wheelDelta = 0;
                     }
-                } else {
-                    unlockScroll();
-                    wheelAccumulator = 0;
+                    return;
                 }
-            }
 
-            window.addEventListener('wheel', handleWheel, { passive: false });
-
-            // ---- TOUCH EVENTS (Mobile) ----
-            let touchStartY = 0;
-            let touchStartTime = 0;
-            let isTouchActive = false;
-            let touchDelta = 0;
-            const TOUCH_THRESHOLD = 50;
-
-            function handleTouchStart(e) {
-                if (!isSwiperVisible() || isProjectModalOpen()) return;
-
-                touchStartY = e.touches[0].clientY;
-                touchStartTime = Date.now();
-                touchDelta = 0;
-                isTouchActive = true;
-            }
-
-            function handleTouchMove(e) {
-                if (!isTouchActive || isNavigatingProgrammatically) return;
-
-                const touchY = e.touches[0].clientY;
-                const deltaY = touchStartY - touchY; // positive = scrolling down
-                const scrollingDown = deltaY > 0;
-
-                if (shouldHijackScroll(scrollingDown)) {
+                // Non bloccati: controlla se catturare
+                if (shouldCapture(scrollingDown)) {
                     e.preventDefault();
-                    lockScroll();
-
-                    if (isSlideTransitioning) return;
-
-                    touchDelta = deltaY;
-                } else {
-                    unlockScroll();
+                    snapToCenter();
+                    wheelDelta = 0;
                 }
-            }
+            };
 
-            function handleTouchEnd(e) {
-                if (!isTouchActive) return;
-                isTouchActive = false;
+            window.addEventListener('wheel', onWheel, { passive: false });
 
-                const touchDuration = Date.now() - touchStartTime;
-                const velocity = Math.abs(touchDelta) / touchDuration;
+            // ============================================
+            // SCROLL LISTENER (backup per casi edge)
+            // ============================================
+            let lastScrollY = window.scrollY;
 
-                // Check if it was a valid swipe
-                if (Math.abs(touchDelta) >= TOUCH_THRESHOLD || velocity > 0.3) {
-                    const scrollingDown = touchDelta > 0;
+            const onScroll = () => {
+                if (!isMobile() || isModalOpen() || state.navigating) return;
 
-                    if (shouldHijackScroll(scrollingDown)) {
-                        navigateSlide(scrollingDown ? 'next' : 'prev');
-                    }
+                const scrollingDown = window.scrollY > lastScrollY;
+                lastScrollY = window.scrollY;
+
+                // Se bloccati, forza posizione
+                if (state.locked) {
+                    forcePosition();
+                    return;
                 }
 
-                touchDelta = 0;
-            }
+                // Controlla se catturare (per scroll inerziale)
+                if (shouldCapture(scrollingDown)) {
+                    snapToCenter();
+                }
+            };
 
-            // Global touch listeners for consistent behavior
-            document.addEventListener('touchstart', handleTouchStart, { passive: true });
-            document.addEventListener('touchmove', handleTouchMove, { passive: false });
-            document.addEventListener('touchend', handleTouchEnd, { passive: true });
+            window.addEventListener('scroll', onScroll, { passive: true });
 
-            // ---- NAVIGATION LINK HANDLING ----
-            function resetSwiperForNavigation(targetSectionId) {
-                if (!portfolioSwiper || !isSwiperVisible()) return;
+            // ============================================
+            // NAVIGATION LINKS (bypassa il blocco)
+            // ============================================
+            const handleNavClick = (targetId) => {
+                if (!isMobile()) return;
 
-                isNavigatingProgrammatically = true;
-                unlockScroll();
+                state.navigating = true;
+                unlock();
 
-                const portfolioOffset = portfolioSection.offsetTop;
-                const targetSection = document.getElementById(targetSectionId);
+                // Reset swiper alla slide appropriata
+                const portfolioY = portfolioSection.offsetTop;
+                const target = document.getElementById(targetId);
 
-                if (targetSection) {
-                    const targetOffset = targetSection.offsetTop;
-
-                    if (targetOffset < portfolioOffset) {
+                if (target) {
+                    const targetY = target.offsetTop;
+                    if (targetY < portfolioY) {
                         portfolioSwiper.slideTo(0, 0);
-                    } else if (targetOffset > portfolioOffset) {
+                    } else if (targetY > portfolioY) {
                         portfolioSwiper.slideTo(portfolioSwiper.slides.length - 1, 0);
                     }
                 }
 
-                setTimeout(() => {
-                    isNavigatingProgrammatically = false;
-                }, 800);
-            }
+                // Riabilita dopo che la navigazione è completa
+                setTimeout(() => { state.navigating = false; }, 1000);
+            };
 
-            // Handle all navigation clicks
             document.querySelectorAll('a[href^="#"]').forEach(link => {
-                link.addEventListener('click', function() {
-                    const targetId = this.getAttribute('href');
-                    if (targetId && targetId.startsWith('#')) {
-                        const sectionId = targetId.substring(1);
-                        if (sectionId !== 'portfolio') {
-                            resetSwiperForNavigation(sectionId);
-                        }
+                link.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (href?.startsWith('#') && href !== '#' && href !== '#portfolio') {
+                        handleNavClick(href.substring(1));
                     }
                 });
             });
 
-            // ---- INTERSECTION OBSERVER ----
-            // Unlock scroll when swiper leaves viewport
-            const swiperObserver = new IntersectionObserver((entries) => {
+            // ============================================
+            // INTERSECTION OBSERVER (sblocca quando fuori viewport)
+            // ============================================
+            const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    if (!entry.isIntersecting) {
-                        unlockScroll();
+                    if (!entry.isIntersecting && state.locked) {
+                        unlock();
                     }
                 });
-            }, {
-                threshold: 0.1
-            });
+            }, { threshold: 0.1 });
 
-            swiperObserver.observe(swiperContainer);
+            observer.observe(swiperContainer);
 
-            // Safety: unlock on resize if swiper becomes hidden
+            // ============================================
+            // RESIZE (sblocca se non più mobile)
+            // ============================================
             window.addEventListener('resize', () => {
-                if (!isSwiperVisible()) {
-                    unlockScroll();
+                if (!isMobile() && state.locked) {
+                    unlock();
                 }
+                // Aggiorna capture zone
+                CONFIG.CAPTURE_ZONE = Math.min(window.innerHeight * 0.4, 350);
             });
+
+            // ============================================
+            // SAFETY: sblocca se swiper esce dalla zona mentre bloccato
+            // ============================================
+            const safetyCheck = () => {
+                if (state.locked && !state.navigating) {
+                    const { inCaptureZone } = getMetrics();
+                    if (!inCaptureZone) {
+                        unlock();
+                    }
+                }
+                requestAnimationFrame(safetyCheck);
+            };
+            requestAnimationFrame(safetyCheck);
         }
     }
 
@@ -1004,6 +1217,33 @@
                     'Integrazione Trustpilot per recensioni verificate',
                     'Ottimizzazione SEO avanzata (robots e LLMs)',
                     'Sistema di contact form per acquisizione lead'
+                ]
+            }
+        },
+        'caorafilm': {
+            title: 'Caora Film',
+            year: '2025',
+            image: 'img/pr9.png',
+            techStack: ['Angular 17', 'Firebase', 'GSAP', 'SCSS', 'Cloud Functions', 'AppCheck'],
+            link: 'https://caorafilm.it/',
+            en: {
+                category: 'Production House',
+                description: 'Boutique production house and artistic platform for auteur cinema, poetry and immersive visual experiences. Features a cinematic dark design with smooth GSAP animations and information about artistic residencies called "The Engine".',
+                features: [
+                    'Dark cinematic aesthetic with elegant teal accents',
+                    'Smooth scroll-triggered animations with GSAP',
+                    'Film portfolio showcase with detailed project info',
+                    'Artistic residencies section "The Engine"'
+                ]
+            },
+            it: {
+                category: 'Casa di Produzione',
+                description: 'Casa di produzione boutique e piattaforma artistica per cinema d\'autore, poesia ed esperienze visive immersive. Presenta un design cinematico dark con animazioni fluide GSAP e informazioni sulle residenze artistiche chiamate "The Engine".',
+                features: [
+                    'Estetica cinematica dark con eleganti accenti teal',
+                    'Animazioni fluide scroll-triggered con GSAP',
+                    'Showcase portfolio film con info dettagliate',
+                    'Sezione residenze artistiche "The Engine"'
                 ]
             }
         }

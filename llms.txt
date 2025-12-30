@@ -47,6 +47,7 @@ Andrea Bardi is a 23-year-old creative developer with a unique blend of graphic 
 - [CERNET ESCO](https://cernetesco.it): Corporate website for energy services company
 - [Semplicemente Comunita](https://semplicementecomunita.it): Community web application and corporate website
 - [Adriano Group](https://adrianogroup.it): Marketing website
+- [Caora Film](https://caorafilm.it): Boutique production house for auteur cinema - Angular, GSAP, Firebase
 
 ## Optional
 
