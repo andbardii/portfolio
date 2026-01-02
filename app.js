@@ -507,14 +507,22 @@ console.log(
     // ============================================
 
     let portfolioSwiper = null;
+    let originalSwiperSlides = []; // Slide originali per ricostruzione dopo filtri
 
     if (typeof Swiper !== 'undefined') {
         const swiperContainer = document.querySelector('.portfolio-swiper');
         const portfolioSection = document.getElementById('portfolio');
+        const swiperWrapper = document.querySelector('.portfolio-swiper .swiper-wrapper');
 
         if (!swiperContainer || !portfolioSection) {
             console.warn('Swiper: elementi non trovati');
         } else {
+            // Salva le slide originali prima di inizializzare lo swiper
+            originalSwiperSlides = Array.from(swiperWrapper.querySelectorAll('.swiper-slide')).map(slide => ({
+                html: slide.outerHTML,
+                category: slide.querySelector('.portfolio-item')?.getAttribute('data-category') || ''
+            }));
+
             // Swiper con touch orizzontale abilitato
             portfolioSwiper = new Swiper('.portfolio-swiper', {
                 slidesPerView: 1,
@@ -556,7 +564,8 @@ console.log(
                 sliding: false,
                 navigating: false,  // true durante click su nav link
                 centered: false,
-                rafId: null
+                rafId: null,
+                swiperCompleted: false  // true dopo aver visto tutti i progetti
             };
 
             // ============================================
@@ -663,6 +672,9 @@ console.log(
             // DETERMINA SE BLOCCARE
             // ============================================
             const shouldCapture = (scrollingDown) => {
+                // Non bloccare mai se l'utente ha già completato lo swiper
+                if (state.swiperCompleted) return false;
+
                 if (!isMobile() || isModalOpen() || state.navigating) return false;
 
                 const { inCaptureZone } = getMetrics();
@@ -752,7 +764,8 @@ console.log(
                         if (canSlide(direction)) {
                             slide(direction);
                         } else {
-                            // Fine slide, sblocca
+                            // Fine slide, segna come completato e sblocca permanentemente
+                            state.swiperCompleted = true;
                             unlock();
                         }
                     }
@@ -794,6 +807,8 @@ console.log(
                         if (canSlide(direction)) {
                             slide(direction);
                         } else {
+                            // Fine slide, segna come completato e sblocca permanentemente
+                            state.swiperCompleted = true;
                             unlock();
                         }
 
@@ -950,7 +965,7 @@ console.log(
     // PORTFOLIO FILTER
     // ============================================
     const filterBtns = document.querySelectorAll('.filter-btn');
-    const portfolioItems = document.querySelectorAll('.portfolio-item');
+    const portfolioItemsDesktop = document.querySelectorAll('.portfolio-desktop .portfolio-item');
 
     filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -960,7 +975,8 @@ console.log(
 
             const filterValue = btn.getAttribute('data-filter');
 
-            portfolioItems.forEach(item => {
+            // Filtra gli item desktop (grid)
+            portfolioItemsDesktop.forEach(item => {
                 const categories = item.getAttribute('data-category');
 
                 if (filterValue === 'all' || categories.includes(filterValue)) {
@@ -970,6 +986,30 @@ console.log(
                     item.classList.add('hidden');
                 }
             });
+
+            // Ricostruisci le slide dello swiper mobile
+            if (portfolioSwiper && originalSwiperSlides.length > 0) {
+                const swiperWrapper = document.querySelector('.portfolio-swiper .swiper-wrapper');
+                if (swiperWrapper) {
+                    // Filtra le slide in base al filtro
+                    const filteredSlides = originalSwiperSlides.filter(slide => {
+                        if (filterValue === 'all') return true;
+                        return slide.category.includes(filterValue);
+                    });
+
+                    // Rimuovi tutte le slide esistenti
+                    portfolioSwiper.removeAllSlides();
+
+                    // Aggiungi solo le slide filtrate
+                    filteredSlides.forEach(slide => {
+                        portfolioSwiper.appendSlide(slide.html);
+                    });
+
+                    // Aggiorna lo swiper e vai alla prima slide
+                    portfolioSwiper.update();
+                    portfolioSwiper.slideTo(0, 0);
+                }
+            }
         });
     });
 
@@ -1252,7 +1292,6 @@ console.log(
     const projectModal = document.getElementById('projectModal');
     const projectModalClose = document.querySelector('.project-modal-close');
     const projectModalBackdrop = document.querySelector('.project-modal-backdrop');
-    const projectDetailsBtns = document.querySelectorAll('.portfolio-details-btn');
 
     function openProjectModal(projectId) {
         const project = projectsData[projectId];
@@ -1305,8 +1344,10 @@ console.log(
         }
     }
 
-    projectDetailsBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    // Event delegation per i bottoni del progetto (funziona anche dopo ricostruzione slide swiper)
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.portfolio-details-btn');
+        if (btn) {
             e.preventDefault();
             e.stopPropagation();
             const portfolioItem = btn.closest('.portfolio-item');
@@ -1314,7 +1355,7 @@ console.log(
             if (projectId) {
                 openProjectModal(projectId);
             }
-        });
+        }
     });
 
     if (projectModalClose) {
