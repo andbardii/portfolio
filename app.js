@@ -565,7 +565,8 @@ console.log(
                 navigating: false,  // true durante click su nav link
                 centered: false,
                 rafId: null,
-                swiperCompleted: false  // true dopo aver visto tutti i progetti
+                swiperCompleted: false,  // true dopo aver visto tutti i progetti
+                captureDirection: null   // 'down' o 'up' - direzione che ha causato il blocco
             };
 
             // ============================================
@@ -621,8 +622,11 @@ console.log(
             // ============================================
             // SNAP AL CENTRO (istantaneo, no smooth)
             // ============================================
-            const snapToCenter = () => {
+            const snapToCenter = (scrollingDown) => {
                 const { scrollTarget, isCentered } = getMetrics();
+
+                // Salva la direzione che ha causato il blocco
+                state.captureDirection = scrollingDown ? 'down' : 'up';
 
                 if (isCentered) {
                     state.centered = true;
@@ -746,7 +750,7 @@ console.log(
                     // Se dovremmo catturare
                     if (shouldCapture(scrollingDown)) {
                         e.preventDefault();
-                        snapToCenter();
+                        snapToCenter(scrollingDown);
                     }
                 }
             };
@@ -754,14 +758,23 @@ console.log(
             const onTouchEnd = () => {
                 if (!touch.active) return;
 
-                // Se bloccati e swipe verticale significativo, naviga
+                // Se bloccati e swipe verticale significativo
                 if (state.locked && touch.direction === 'v' && !state.sliding) {
                     const delta = touch.totalDeltaY;
 
                     if (Math.abs(delta) >= CONFIG.VERTICAL_THRESHOLD) {
-                        const direction = delta > 0 ? 'next' : 'prev';
+                        const swipingDown = delta > 0;
+                        const direction = swipingDown ? 'next' : 'prev';
 
-                        if (canSlide(direction)) {
+                        // Se l'utente swipa nella direzione OPPOSTA a quella di cattura, sblocca subito
+                        const wantsToGoBack = (state.captureDirection === 'down' && !swipingDown) ||
+                                              (state.captureDirection === 'up' && swipingDown);
+
+                        if (wantsToGoBack) {
+                            // L'utente vuole tornare indietro, sblocca permanentemente
+                            state.swiperCompleted = true;
+                            unlock();
+                        } else if (canSlide(direction)) {
                             slide(direction);
                         } else {
                             // Fine slide, segna come completato e sblocca permanentemente
@@ -802,9 +815,18 @@ console.log(
                     wheelDelta += e.deltaY;
 
                     if (Math.abs(wheelDelta) >= CONFIG.WHEEL_THRESHOLD) {
-                        const direction = wheelDelta > 0 ? 'next' : 'prev';
+                        const wheelingDown = wheelDelta > 0;
+                        const direction = wheelingDown ? 'next' : 'prev';
 
-                        if (canSlide(direction)) {
+                        // Se l'utente scrolla nella direzione OPPOSTA a quella di cattura, sblocca subito
+                        const wantsToGoBack = (state.captureDirection === 'down' && !wheelingDown) ||
+                                              (state.captureDirection === 'up' && wheelingDown);
+
+                        if (wantsToGoBack) {
+                            // L'utente vuole tornare indietro, sblocca permanentemente
+                            state.swiperCompleted = true;
+                            unlock();
+                        } else if (canSlide(direction)) {
                             slide(direction);
                         } else {
                             // Fine slide, segna come completato e sblocca permanentemente
@@ -820,7 +842,7 @@ console.log(
                 // Non bloccati: controlla se catturare
                 if (shouldCapture(scrollingDown)) {
                     e.preventDefault();
-                    snapToCenter();
+                    snapToCenter(scrollingDown);
                     wheelDelta = 0;
                 }
             };
@@ -846,7 +868,7 @@ console.log(
 
                 // Controlla se catturare (per scroll inerziale)
                 if (shouldCapture(scrollingDown)) {
-                    snapToCenter();
+                    snapToCenter(scrollingDown);
                 }
             };
 
